@@ -17,6 +17,7 @@
     views.forEach(v=>v.classList.toggle('on',v.id===id));
     tabs.forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===id)));
     window.scrollTo(0,0);
+    if(id==='evolucao'&&window.__cycleCharts)requestAnimationFrame(window.__cycleCharts);
     const act=tabs.find(b=>b.dataset.tab===id); if(act) act.scrollIntoView({inline:'center',block:'nearest'});
   }
   tabs.forEach(b=>b.addEventListener('click',()=>{location.hash=b.dataset.tab}));
@@ -151,6 +152,7 @@
       if(s){s.textContent=c+'/3';s.classList.toggle('full',c===3)}
     }
     $('#done-n').textContent=n; $('#meter').style.width=(n/30*100)+'%';
+    if(window.__cycleCharts)window.__cycleCharts();
   }
   const onLog=e=>{
     const tr=e.target.closest('[data-k]'),f=e.target.dataset.f; if(!tr||!f||f==='pace')return;
@@ -690,4 +692,157 @@
   $('#t5').addEventListener('input',e=>{
     const t=sec(e.target.value);$('#p5').textContent=t?fmt(t/5):'—';
   });
+
+  /* ===== gráficos de evolução ===== */
+  (function(){
+    const NS='http://www.w3.org/2000/svg';
+    const pace=s=>Math.floor(s/60)+':'+String(Math.round(s%60)).padStart(2,'0');
+    const hms=s=>{s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?h+'h'+String(m).padStart(2,'0'):m+' min'};
+    const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const DN={'Seg':'Segunda','Qua':'Quarta','Sáb':'Sábado'};
+    const km=n=>String(+n.toFixed(2)).replace('.',',');
+
+    function nice(lo,hi,want,steps){
+      const span=(hi-lo)||1,raw=span/want;
+      let step=(steps||[1,2,5,10,20,50,100,200,500]).find(s=>s>=raw);
+      if(!step)step=Math.pow(10,Math.ceil(Math.log10(raw)));
+      const a=Math.floor(lo/step)*step,b=Math.ceil(hi/step)*step,t=[];
+      for(let v=a;v<=b+step/2;v+=step)t.push(+v.toFixed(6));
+      return t;
+    }
+    function tip(host){
+      let t=host.querySelector('.ct');
+      if(!t){t=document.createElement('div');t.className='ct';host.appendChild(t)}
+      return t;
+    }
+    function wire(host,svg){
+      const t=tip(host),xh=svg.querySelector('.xh');
+      svg.querySelectorAll('.hit').forEach(h=>{
+        const show=()=>{
+          t.textContent=h.dataset.tip;
+          const r=host.getBoundingClientRect(),b=h.getBoundingClientRect();
+          t.style.left=Math.min(Math.max(b.left+b.width/2-r.left,60),r.width-60)+'px';
+          t.style.top=(b.top+b.height/2-r.top)+'px';
+          t.classList.add('on');
+          if(xh){xh.setAttribute('x1',h.dataset.x);xh.setAttribute('x2',h.dataset.x);xh.style.opacity=1}
+        };
+        const hide=()=>{t.classList.remove('on');if(xh)xh.style.opacity=0};
+        h.addEventListener('pointerenter',show);h.addEventListener('pointerdown',show);
+        h.addEventListener('pointerleave',hide);h.addEventListener('focus',show);h.addEventListener('blur',hide);
+        h.setAttribute('tabindex','0');
+      });
+    }
+    function empty(host,msg){host.innerHTML='<div class="empty">'+esc(msg)+'</div>'}
+
+    /* linha: pts [{i,y,tip}], n posições no eixo x, xl(i) rótulo */
+    function line(host,o){
+      if(!o.pts.length){empty(host,o.empty);return}
+      const W=Math.max(260,Math.round(host.clientWidth||520)),H=230,m={l:o.ml||46,r:16,t:16,b:30};
+      const pw=W-m.l-m.r,ph=H-m.t-m.b;
+      const ys=o.pts.map(p=>p.y).concat(o.band||[]);
+      let lo=Math.min(...ys),hi=Math.max(...ys);
+      const pad=(hi-lo)*0.18||o.pad;lo-=pad;hi+=pad;
+      const tk=nice(lo,hi,4,o.steps);lo=tk[0];hi=tk[tk.length-1];
+      const X=i=>m.l+(o.n<=1?pw/2:i*pw/(o.n-1));
+      const Y=v=>m.t+(o.faster?(v-lo)/(hi-lo):(hi-v)/(hi-lo))*ph;
+      let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">`;
+      tk.forEach(v=>{s+=`<line class="gl" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="ax" x="${m.l-8}" y="${Y(v)+4}" text-anchor="end">${o.fmt(v)}</text>`});
+      if(o.band){const y1=Y(o.band[1]),y2=Y(o.band[0]);s+=`<rect class="band" x="${m.l}" y="${Math.min(y1,y2)}" width="${pw}" height="${Math.abs(y2-y1)}"/><text class="bandl" x="${W-m.r-4}" y="${Math.min(y1,y2)+12}" text-anchor="end">${esc(o.bandLabel)}</text>`}
+      for(let i=0;i<o.n;i++){const l=o.xl(i);if(l)s+=`<text class="ax" x="${X(i)}" y="${H-8}" text-anchor="middle">${esc(l)}</text>`}
+      s+=`<line class="xh" y1="${m.t}" y2="${H-m.b}" x1="0" x2="0"/>`;
+      const d=o.pts.map((p,k)=>(k?'L':'M')+X(p.i).toFixed(1)+' '+Y(p.y).toFixed(1)).join('');
+      if(o.pts.length>1)s+=`<path class="ln" d="${d}"/>`;
+      o.pts.forEach(p=>{s+=`<circle class="dot" cx="${X(p.i)}" cy="${Y(p.y)}" r="4.5"/>`});
+      const last=o.pts[o.pts.length-1];
+      s+=`<text class="val" x="${Math.min(X(last.i),W-m.r-18)}" y="${Y(last.y)-10}" text-anchor="middle">${o.fmt(last.y)}</text>`;
+      o.pts.forEach(p=>{s+=`<circle class="hit" cx="${X(p.i)}" cy="${Y(p.y)}" r="14" data-x="${X(p.i)}" data-tip="${esc(p.tip)}"><title>${esc(p.tip)}</title></circle>`});
+      s+='</svg>';
+      host.innerHTML=s;wire(host,host.querySelector('svg'));
+    }
+    /* colunas: vals [{l,v,tip}] */
+    function bars(host,o){
+      if(!o.vals.some(b=>b.v>0)){empty(host,o.empty);return}
+      const W=Math.max(260,Math.round(host.clientWidth||520)),H=230,m={l:40,r:12,t:16,b:30};
+      const pw=W-m.l-m.r,ph=H-m.t-m.b;
+      const mx=Math.max(...o.vals.map(b=>b.v)),tk=nice(0,mx*1.05,4,[1,2,5,10,20,50]),hi=tk[tk.length-1];
+      const Y=v=>m.t+(1-v/hi)*ph,slot=pw/o.vals.length,bw=Math.min(24,slot*0.55);
+      let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">`;
+      tk.forEach(v=>{s+=`<line class="${v===0?'base':'gl'}" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="ax" x="${m.l-8}" y="${Y(v)+4}" text-anchor="end">${v}</text>`});
+      const top=o.vals.reduce((a,b,i,arr)=>b.v>arr[a].v?i:a,0);
+      o.vals.forEach((b,i)=>{
+        const cx=m.l+slot*i+slot/2,x=cx-bw/2,y=Y(b.v),y0=Y(0);
+        s+=`<text class="ax" x="${cx}" y="${H-8}" text-anchor="middle">${esc(b.l)}</text>`;
+        if(b.v>0){const r=Math.min(4,y0-y);
+          s+=`<path class="bar" d="M${x} ${y0}V${y+r}Q${x} ${y} ${x+r} ${y}H${x+bw-r}Q${x+bw} ${y} ${x+bw} ${y+r}V${y0}Z"/>`;
+          if(i===top)s+=`<text class="val" x="${cx}" y="${y-6}" text-anchor="middle">${km(b.v)}</text>`}
+        s+=`<rect class="hit" x="${m.l+slot*i}" y="${m.t}" width="${slot}" height="${ph}" data-x="${cx}" data-tip="${esc(b.tip)}"><title>${esc(b.tip)}</title></rect>`;
+      });
+      s+='</svg>';
+      host.innerHTML=s;
+      const svg=host.querySelector('svg'),t=tip(host);
+      svg.querySelectorAll('.hit').forEach(h=>{
+        const show=()=>{t.textContent=h.dataset.tip;const r=host.getBoundingClientRect(),b=h.getBoundingClientRect();
+          t.style.left=Math.min(Math.max(+h.dataset.x/W*r.width,60),r.width-60)+'px';t.style.top=(m.t+8)+'px';t.classList.add('on')};
+        h.addEventListener('pointerenter',show);h.addEventListener('pointerdown',show);
+        h.addEventListener('pointerleave',()=>t.classList.remove('on'));
+        h.addEventListener('focus',show);h.addEventListener('blur',()=>t.classList.remove('on'));h.setAttribute('tabindex','0');
+      });
+    }
+    function table(host,head,rows){
+      host.innerHTML=rows.length?`<table><thead><tr>${head.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td class="mono">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`:'<p class="mini" style="padding:10px">Sem dados ainda.</p>';
+    }
+
+    function render(){
+      if(!document.getElementById('c-pace'))return;
+      /* dados do registro */
+      const sessions=[];
+      for(let w=1;w<=10;w++)DAYS.forEach((d,j)=>{
+        const e=log[w+'-'+d]||{},t=sec(e.time||''),k=parseFloat(String(e.dist||'').replace(',','.'));
+        sessions.push({w,d,idx:(w-1)*3+j,done:!!e.done,t:t||0,k:k>0?k:0,p:(t&&k>0)?t/k:null});
+      });
+      const withPace=sessions.filter(s=>s.p);
+      const done=sessions.filter(s=>s.done).length;
+      const totK=sessions.reduce((a,s)=>a+s.k,0),totT=sessions.reduce((a,s)=>a+(s.k?s.t:0),0);
+      const best=withPace.length?Math.min(...withPace.map(s=>s.p)):null;
+      document.getElementById('ev-stats').innerHTML=
+        `<div><div class="v">${done}<span class="mini">/30</span></div><div class="l">treinos feitos</div></div>
+         <div><div class="v">${totK?km(totK):'0'} km</div><div class="l">distância total</div></div>
+         <div><div class="v">${totT?hms(totT):'—'}</div><div class="l">tempo correndo</div></div>
+         <div><div class="v">${best?pace(best):'—'}</div><div class="l">melhor ritmo /km</div></div>`;
+
+      /* 1. ritmo por treino */
+      line(document.getElementById('c-pace'),{
+        n:30,pts:withPace.map(s=>({i:s.idx,y:s.p,tip:`Sem. ${s.w} · ${DN[s.d]}: ${pace(s.p)} /km (${km(s.k)} km)`})),
+        xl:i=>i%3===0?'S'+(i/3+1):'',fmt:pace,faster:true,steps:[5,10,15,30,60,120],pad:15,
+        aria:'Ritmo médio por treino, em minutos por quilômetro',empty:'Registre tempo e distância em um treino para ver o ritmo aqui.'});
+      table(document.getElementById('t-pace'),['Semana','Dia','Distância','Ritmo'],withPace.map(s=>['S'+s.w,DN[s.d],km(s.k)+' km',pace(s.p)+' /km']));
+
+      /* 2. volume semanal */
+      const wk=[];for(let w=1;w<=10;w++)wk.push({l:'S'+w,v:+sessions.filter(s=>s.w===w).reduce((a,s)=>a+s.k,0).toFixed(2)});
+      bars(document.getElementById('c-vol'),{vals:wk.map(b=>({...b,tip:`Semana ${b.l.slice(1)}: ${km(b.v)} km`})),
+        aria:'Distância total por semana, em quilômetros',empty:'Registre a distância dos treinos para ver o volume semanal.'});
+      table(document.getElementById('t-vol'),['Semana','Distância'],wk.map(b=>[b.l,km(b.v)+' km']));
+
+      /* 3 e 4. marcos */
+      const M=['Início','Sem. 4','Sem. 8','Teste'];
+      const kg=[],t5=[];
+      M.forEach((n,i)=>{
+        const e=evd[i]||{};
+        const k=parseFloat(String(e.kg||'').replace(/[^\d.,]/g,'').replace(',','.'));
+        const t=sec(String(e.t5||'').replace(/[^\d:]/g,''));
+        if(k>0)kg.push({i,y:k,tip:`${n}: ${String(k).replace('.',',')} kg`});
+        if(t)t5.push({i,y:t,tip:`${n}: ${pace(t)} (${pace(t/5)} /km)`});
+      });
+      line(document.getElementById('c-kg'),{n:4,pts:kg,xl:i=>M[i],fmt:v=>String(+v.toFixed(1)).replace('.',','),faster:false,steps:[0.5,1,2,5,10],pad:1,
+        aria:'Peso nos marcos do ciclo, em quilos',empty:'Preencha o peso nos marcos (tabela abaixo) para ver a evolução.'});
+      table(document.getElementById('t-kg'),['Marco','Peso'],kg.map(p=>[M[p.i],String(p.y).replace('.',',')+' kg']));
+      line(document.getElementById('c-t5'),{n:4,pts:t5,xl:i=>M[i],fmt:pace,faster:true,steps:[5,10,15,30,60,120],pad:20,band:[29*60,30*60],bandLabel:'meta 29:00–30:00',ml:48,
+        aria:'Tempo nos 5 quilômetros nos marcos do ciclo',empty:'Preencha o tempo de 5 km nos marcos (tabela abaixo) para ver a evolução.'});
+      table(document.getElementById('t-t5'),['Marco','Tempo','Ritmo'],t5.map(p=>[M[p.i],pace(p.y),pace(p.y/5)+' /km']));
+    }
+    window.__cycleCharts=render;
+    $('#evobody').addEventListener('input',render);
+    window.addEventListener('resize',()=>{if(document.getElementById('evolucao').classList.contains('on'))render()});
+    render();
+  })();
 })();

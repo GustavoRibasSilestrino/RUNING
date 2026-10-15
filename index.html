@@ -332,6 +332,23 @@
 <section class="view" id="evolucao">
   <div class="kicker">Marcos</div>
   <h2>Acompanhamento de evolução</h2>
+    <div class="ev-stats" id="ev-stats"></div>
+  <div class="ev-grid">
+    <figure class="chart"><figcaption><h3>Ritmo médio por treino</h3><span class="mini">mais rápido = mais alto · por sessão do plano</span></figcaption>
+      <div class="plot" id="c-pace"></div>
+      <details class="more"><summary>Ver dados em tabela</summary><div id="t-pace" class="tw mini-tw"></div></details></figure>
+    <figure class="chart"><figcaption><h3>Distância por semana</h3><span class="mini">km somados das 3 sessões</span></figcaption>
+      <div class="plot" id="c-vol"></div>
+      <details class="more"><summary>Ver dados em tabela</summary><div id="t-vol" class="tw mini-tw"></div></details></figure>
+    <figure class="chart"><figcaption><h3>Peso</h3><span class="mini">kg · marcos da tabela abaixo</span></figcaption>
+      <div class="plot" id="c-kg"></div>
+      <details class="more"><summary>Ver dados em tabela</summary><div id="t-kg" class="tw mini-tw"></div></details></figure>
+    <figure class="chart"><figcaption><h3>Tempo nos 5 km</h3><span class="mini">faixa = meta 29:00 a 30:00</span></figcaption>
+      <div class="plot" id="c-t5"></div>
+      <details class="more"><summary>Ver dados em tabela</summary><div id="t-t5" class="tw mini-tw"></div></details></figure>
+  </div>
+  <h3 style="margin:40px 0 12px">Marcos</h3>
+  <p class="mini" style="margin-bottom:12px">Preencha peso e tempo de 5 km nos marcos para alimentar os gráficos. O ritmo e a distância vêm do Registro de treinos.</p>
   <div class="tw"><table class="log">
     <thead><tr><th>Momento</th><th>Data</th><th>Peso (kg)</th><th>Tempo 5 km</th><th>FC repouso (ao acordar)</th><th>Como me sinto</th></tr></thead>
     <tbody id="evobody"></tbody>
