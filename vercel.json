@@ -1,5 +1,1 @@
-﻿{
-  "installCommand": "echo sem dependencias",
-  "buildCommand": "node scripts/build-www.js",
-  "outputDirectory": "www"
-}
+﻿{"framework":null,"outputDirectory":"."}
