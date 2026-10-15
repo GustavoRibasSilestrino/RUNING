@@ -5,6 +5,11 @@
     set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
   };
 
+  /* offline: service worker */
+  if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){
+    window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
+  }
+
   /* tabs */
   const tabs=$$('nav.tabs button'), views=$$('main section.view');
   function show(id){
@@ -240,6 +245,16 @@
 
     /* treino de tiros: fases */
     function buildPlan(){
+      if(R.custom){
+        const c=R.custom,p=[],tot=c.steps.length;
+        if(c.wu>0)p.push({k:'warm',kind:'time',v:c.wu*60,label:'Aquecimento'});
+        c.steps.forEach((s,i)=>{
+          p.push({k:'run',kind:s.run.kind,v:s.run.v,label:'Tiro '+(i+1)+'/'+tot,i:i+1,reps:tot});
+          if(s.rest)p.push({k:'rest',kind:s.rest.kind,v:s.rest.v,label:'Recuperação',verb:'Trote leve'});
+        });
+        if(c.cd>0)p.push({k:'cool',kind:'time',v:c.cd*60,label:'Desaquecimento'});
+        return p;
+      }
       const n=id=>parseFloat(el(id).value)||0,p=[];
       const wu=n('r-wu'),cd=n('r-cd'),reps=Math.max(1,Math.round(n('r-reps'))||1);
       const rv=n('r-runv')||1,ru=el('r-runu').value,sv=n('r-restv'),su=el('r-restu').value;
@@ -256,16 +271,20 @@
     function phaseText(ph){
       if(ph.k==='warm')return 'Aquecimento. '+phDur(ph)+' em ritmo leve.';
       if(ph.k==='run')return 'Tiro '+ph.i+' de '+ph.reps+'. Corra '+phDur(ph)+'.';
-      if(ph.k==='rest')return 'Caminhe por '+phDur(ph)+'.';
+      if(ph.k==='rest')return (ph.verb||'Caminhe')+' por '+phDur(ph)+'.';
       return 'Desaquecimento. '+phDur(ph)+' em ritmo leve.';
+    }
+    function paintPhase(){
+      const ph=R.plan[R.pi];if(!ph)return;
+      el('r-phase').className='phase '+ph.k;
+      el('r-ph-name').textContent=ph.label;
+      const nx=R.plan[R.pi+1];
+      el('r-ph-next').textContent=nx?'Depois: '+(nx.k==='run'?'correr ':nx.k==='rest'?(nx.verb?'trote ':'caminhar '):'')+phShort(nx):'Última fase';
     }
     function startPhase(prefix){
       const ph=R.plan[R.pi],now=elapsed();
       R.phT=now;R.phD=R.dist;R.warn={};
-      const box=el('r-phase');box.className='phase '+ph.k;
-      el('r-ph-name').textContent=ph.label;
-      const nx=R.plan[R.pi+1];
-      el('r-ph-next').textContent=nx?'Depois: '+(nx.k==='run'?'correr ':nx.k==='rest'?'caminhar ':'')+phShort(nx):'Última fase';
+      paintPhase();
       status(phaseText(ph),false);
       say((prefix||'')+phaseText(ph),ph.k==='run'?[500,120,500]:ph.k==='rest'?[250]:[200]);
     }
@@ -286,6 +305,106 @@
       if(R.pi>=R.plan.length){doFinish();return}
       startPhase('');
     }
+    /* ===== treino do dia, retomada e persistência ===== */
+    let persistTick=0;
+    function persist(){
+      if(R.state!=='run'&&R.state!=='pause')return;
+      store.set('runstate',{v:1,savedAt:Date.now(),mode:R.mode,state:R.state,elapsed:elapsed(),dist:R.dist,splits:R.splits,
+        markT:R.markT,nextDist:R.nextDist,nextTime:R.nextTime,step:R.step,tStep:R.tStep,goalDone:R.goalDone,tGoalDone:R.tGoalDone,
+        plan:R.plan,pi:R.pi,phT:R.phT,phD:R.phD,custom:R.custom||null,sim:el('r-sim').checked,scale:R.scale});
+    }
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persist()});
+    window.addEventListener('pagehide',persist);
+
+    function restore(s){
+      R.mode=s.mode;R.dist=s.dist;R.base=s.elapsed;R.t0=null;R.splits=s.splits||[];R.markT=s.markT||0;R.prevT=s.elapsed;
+      R.nextDist=s.nextDist==null?Infinity:s.nextDist;R.nextTime=s.nextTime==null?Infinity:s.nextTime;
+      R.step=s.step||0;R.tStep=s.tStep||0;R.goalDone=!!s.goalDone;R.tGoalDone=!!s.tGoalDone;
+      R.plan=s.plan||[];R.pi=s.pi||0;R.phT=s.phT||0;R.phD=s.phD||0;R.warn={};R.custom=s.custom||null;
+      R.scale=s.scale||1;el('r-sim').checked=!!s.sim;
+      R.pts=[];R.last=null;R.state='pause';R.needSensors=true;
+      setMode(s.mode);setModeEnabled(false);
+      if(R.mode==='int'){el('r-phase').hidden=false;paintPhase()}
+      renderSplits();render();buttons();el('r-resume').hidden=true;
+      status('Treino restaurado. Toque em Retomar para continuar.',false);
+    }
+    function checkResume(){
+      const s=store.get('runstate',null);
+      if(!s||Date.now()-s.savedAt>8*3600e3||!(s.state==='run'||s.state==='pause')){store.set('runstate',null);return}
+      const at=new Date(s.savedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      el('r-resume-t').textContent=`Há um treino em andamento: ${clock(s.elapsed)} · ${km2(s.dist)} km (salvo às ${at}).`;
+      el('r-resume').hidden=false;
+      el('r-resume-yes').onclick=()=>restore(s);
+      el('r-resume-no').onclick=()=>{store.set('runstate',null);el('r-resume').hidden=true};
+    }
+
+    const START=new Date(2026,9,19);
+    const DFULL={'Seg':'Segunda','Qua':'Quarta','Sáb':'Sábado'};
+    const mn=n=>({kind:'time',v:n*60}),sc=n=>({kind:'time',v:n}),mt=n=>({kind:'dist',v:n});
+    const I=(r,run,rest)=>({t:'int',steps:Array.from({length:r},(_,i)=>({run,rest:i<r-1?rest:null}))});
+    const F=(m,z,km)=>({t:'free',min:m,z:z||'z2',km:km||0});
+    const SES={
+      1:{'Seg':I(6,mn(2),mn(2)),'Qua':F(30),'Sáb':F(40)},
+      2:{'Seg':I(8,mn(1),sc(90)),'Qua':F(30),'Sáb':F(45)},
+      3:{'Seg':I(5,mn(3),mn(2)),'Qua':F(35),'Sáb':F(50)},
+      4:{'Seg':I(4,mn(2),mn(2)),'Qua':F(30),'Sáb':I(3,mn(5),mn(2))},
+      5:{'Seg':I(6,mt(400),mn(2)),'Qua':F(35),'Sáb':F(55)},
+      6:{'Seg':I(3,mn(6),mn(2)),'Qua':F(40),'Sáb':F(60)},
+      7:{'Seg':{t:'int',steps:[1,2,3,2,1].map((m,i,a)=>({run:mn(m),rest:i<a.length-1?mn(m):null}))},'Qua':F(40),'Sáb':F(60)},
+      8:{'Seg':I(5,mn(2),mn(2)),'Qua':F(30),'Sáb':F(45)},
+      9:{'Seg':I(2,mn(10),mn(3)),'Qua':F(35),'Sáb':I(4,mn(5),mn(2))},
+      10:{'Seg':I(6,mn(1),sc(90)),'Qua':F(25),'Sáb':F(0,'rp',5)}
+    };
+    function nextSession(){
+      const now=new Date();now.setHours(0,0,0,0);
+      for(let i=0;i<90;i++){
+        const d=new Date(now);d.setDate(now.getDate()+i);
+        const off=Math.round((d-START)/864e5);if(off<0)continue;
+        const w=Math.floor(off/7)+1;if(w>10)return null;
+        const day={0:'Seg',2:'Qua',5:'Sáb'}[off%7];if(!day)continue;
+        return{w,day,date:d,today:i===0};
+      }
+      return null;
+    }
+    let curSes=null;
+    function showLoaded(txt){
+      el('r-loaded').hidden=!txt;el('r-manual').hidden=!!txt;
+      if(txt)el('r-loaded-t').textContent=txt;
+    }
+    function loadSession(w,day){
+      if(R.state==='run'||R.state==='pause'||R.state==='count')return;
+      const s=SES[w][day],txt=W[w-1][{'Seg':3,'Qua':4,'Sáb':5}[day]][0];
+      if(s.t==='int'){
+        R.custom={wu:10,cd:5,steps:s.steps};
+        el('r-goal').value='';el('r-tgoal').value='';
+        setMode('int');
+        showLoaded(`Semana ${w} · ${DFULL[day]}: ${txt}. Inclui 10 min de aquecimento e 5 min de desaquecimento.`);
+        status('Treino do plano carregado. Toque em Iniciar.',false);
+      }else{
+        R.custom=null;showLoaded(null);
+        setMode('free');
+        el('r-target').value=s.z;el('r-custom').hidden=true;
+        el('r-tgoal').value=s.min||'';el('r-goal').value=s.km||'';
+        status('Treino carregado: '+txt+'. Toque em Iniciar.',false);
+      }
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+    function renderToday(){
+      const box=el('today'),n=nextSession();curSes=n;
+      if(!n){box.hidden=false;el('td-k').textContent='Ciclo 1';el('td-t').textContent='Ciclo concluído';
+        el('td-d').textContent='Volte com o novo tempo de 5 km para montar o Ciclo 2.';el('td-load').hidden=true;return}
+      const idx={'Seg':3,'Qua':4,'Sáb':5}[n.day],info=W[n.w-1][idx];
+      const done=(log[n.w+'-'+n.day]||{}).done;
+      const dt=n.date.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      const before=n.date<new Date(START.getTime()+1)&&!n.today&&n.w===1&&n.day==='Seg';
+      el('td-k').textContent=(n.today?'Treino de hoje':'Próximo treino')+' · Semana '+n.w+' · '+DFULL[n.day]+(n.today?'':' '+dt);
+      el('td-t').textContent=info[0].replace(/\s+/g,' ');
+      el('td-d').textContent=(info[1]?'Duração '+info[1].replace(/^~/,'~')+' · ':'')+'Fase: '+W[n.w-1][1]+(done?' · ✓ já registrado':'');
+      el('td-load').hidden=false;el('td-load').disabled=false;
+    }
+    el('td-load').addEventListener('click',()=>{if(curSes)loadSession(curSes.w,curSes.day)});
+    el('r-loaded-x').addEventListener('click',()=>{R.custom=null;showLoaded(null)});
+    ['r-reps','r-runv','r-runu','r-restv','r-restu','r-wu','r-cd'].forEach(id=>el(id).addEventListener('input',()=>{R.custom=null;showLoaded(null)}));
     /* alvo */
     function target(){
       const k=el('r-target').value;
@@ -352,7 +471,7 @@
       el('r-avg').textContent=R.dist>50?pace(now/(R.dist/1000)):'--:--';
       const ls=R.splits[R.splits.length-1];
       el('r-last').textContent=ls?pace(ls.t/ls.step):'--:--';
-      if(R.state==='run'){if(R.mode==='int')intCheck(now);else{paceCheck(now,cp);timeCheck(now)}mediaUpdate(now,cp)}
+      if(R.state==='run'){if(R.mode==='int')intCheck(now);else{paceCheck(now,cp);timeCheck(now)}mediaUpdate(now,cp);if(++persistTick%4===0)persist()}
     }
     function timeCheck(now){
       if(now>=R.nextTime){
@@ -438,11 +557,7 @@
       R.mode=R.mode||'free';R.plan=[];R.pi=0;
       el('r-summary').hidden=true;el('r-phase').hidden=true;renderSplits();render();
     }
-    function begin(){
-      R.state='run';R.scale=el('r-sim').checked?10:1;R.t0=Date.now();R.prevT=0;
-      R.mode=el('m-int').classList.contains('on')?'int':'free';
-      R.step=R.mode==='int'?0:stepKm();R.tStep=R.mode==='int'?0:stepT();
-      R.nextDist=R.step>0?R.step*1000:Infinity;R.nextTime=R.tStep>0?R.tStep:Infinity;R.tGoalDone=false;
+    function startSensors(){
       if(el('r-sim').checked){
         R.sim=setInterval(()=>{
           if(R.state!=='run')return;
@@ -456,7 +571,15 @@
           {enableHighAccuracy:true,maximumAge:0,timeout:20000});
       }
       R.tick=setInterval(render,500);
-      lock();buttons();status('Treino em andamento',false);
+      lock();
+    }
+    function begin(){
+      R.state='run';R.scale=el('r-sim').checked?10:1;R.t0=Date.now();R.prevT=0;
+      R.mode=el('m-int').classList.contains('on')?'int':'free';
+      R.step=R.mode==='int'?0:stepKm();R.tStep=R.mode==='int'?0:stepT();
+      R.nextDist=R.step>0?R.step*1000:Infinity;R.nextTime=R.tStep>0?R.tStep:Infinity;R.tGoalDone=false;
+      startSensors();
+      buttons();status('Treino em andamento',false);
       if(R.mode==='int'){R.plan=buildPlan();R.pi=0;el('r-phase').hidden=false;startPhase('Treino iniciado. ')}
       else say('Treino iniciado.',[200]);
     }
@@ -472,9 +595,10 @@
     el('r-pause').addEventListener('click',()=>{
       if(R.state==='run'){
         R.base=elapsed();R.t0=null;R.state='pause';
-        status('Pausado',false);say('Treino pausado.',[300]);
+        status('Pausado',false);say('Treino pausado.',[300]);persist();
       }else if(R.state==='pause'){
         R.t0=Date.now();R.state='run';R.last=null;R.pts=[];R.prevT=R.base;R.offKind=null;
+        if(R.needSensors){R.needSensors=false;startSensors();keepAlive(true)}
         status('Treino em andamento',false);say('Treino retomado.',[200,100,200]);
       }
       buttons();
@@ -496,6 +620,7 @@
       runs.unshift({d:new Date().toISOString(),dist:+(R.dist/1000).toFixed(2),time:Math.round(total)});
       store.set('runs',runs.slice(0,30));renderHist();fillSlots();
       el('r-phase').hidden=true;setModeEnabled(true);
+      store.set('runstate',null);R.custom=null;showLoaded(null);renderToday();
     }
     window.addEventListener('beforeunload',e=>{if(R.state==='run'||R.state==='pause'){e.preventDefault();e.returnValue=''}});
 
@@ -509,7 +634,7 @@
     el('r-save').addEventListener('click',()=>{
       const k=el('r-slot').value;if(!k)return;
       log[k]=Object.assign(log[k]||{},{done:true,time:clock(R.base),dist:(R.dist/1000).toFixed(2)});
-      store.set('log',log);paint();fillSlots();
+      store.set('log',log);paint();fillSlots();renderToday();
       status('Salvo no registro: semana '+k.replace('-',' · '),false);
     });
 
@@ -546,7 +671,7 @@
     loadVoices();
     if('speechSynthesis' in window)speechSynthesis.addEventListener('voiceschanged',loadVoices);
 
-    setMode(store.get('runmode','free'));
+    setMode(store.get('runmode','free'));renderToday();checkResume();
     reset();buttons();fillSlots();renderHist();
     if(!('vibrate' in navigator))el('r-vib').parentElement.title='Este aparelho/navegador não vibra';
   })();

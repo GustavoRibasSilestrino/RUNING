@@ -283,3 +283,9 @@ header.top nav.tabs{flex:none;justify-content:center;overflow:visible}
 .lc-g label{display:block;font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
 .lc-g label.full{grid-column:1/-1}
 .lc-g input{margin-top:4px;padding:12px 10px;font-size:16px}
+
+/* treino do plano */
+.today{margin-bottom:20px;border-color:var(--track)}
+.today h3{font-size:22px}
+.loaded{margin-top:16px;border:1.5px solid var(--track);padding:14px}
+.loaded p{font-size:15px;line-height:1.45}
