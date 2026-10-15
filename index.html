@@ -120,10 +120,19 @@
         <div><label class="f" for="r-min">Mais rápido (mm:ss)</label><input id="r-min" type="text" value="6:00"></div>
         <div><label class="f" for="r-max">Mais lento (mm:ss)</label><input id="r-max" type="text" value="6:30"></div>
       </div>
-      <div class="fld"><label class="f" for="r-int">Aviso a cada</label>
-        <select id="r-int"><option value="0.5">500 m</option><option value="1" selected>1 km</option><option value="2">2 km</option></select></div>
-      <div class="fld"><label class="f" for="r-goal">Meta de distância (km, opcional)</label>
-        <input id="r-goal" type="number" min="0" step="0.1" placeholder="5"></div>
+      <div class="fld two">
+        <div><label class="f" for="r-intm">Avisar a cada (metros)</label><input id="r-intm" type="number" min="0" step="50" value="1000" placeholder="1000"></div>
+        <div><label class="f" for="r-intt">Avisar a cada (minutos)</label><input id="r-intt" type="number" min="0" step="0.5" placeholder="5"></div>
+      </div>
+      <p class="mini" style="margin-top:6px">Use um, outro ou os dois. Deixe em branco (ou 0) para desligar.</p>
+      <div class="fld two">
+        <div><label class="f" for="r-goal">Meta de distância (km)</label><input id="r-goal" type="number" min="0" step="0.1" placeholder="5"></div>
+        <div><label class="f" for="r-tgoal">Meta de tempo (min)</label><input id="r-tgoal" type="number" min="0" step="1" placeholder="30"></div>
+      </div>
+      <div class="kicker" style="margin-top:22px">Voz</div>
+      <div class="fld"><label class="f" for="r-voicesel">Voz do narrador</label><select id="r-voicesel"><option value="">Padrão do aparelho</option></select></div>
+      <div class="fld"><label class="f" for="r-rate">Velocidade da fala</label><input id="r-rate" type="range" min="0.7" max="1.4" step="0.05" value="1" style="width:100%;accent-color:var(--track)"></div>
+      <button class="sm" id="r-voicetest" style="margin-top:12px">Testar voz</button>
       <label class="chk-l"><input type="checkbox" id="r-voice" checked> Aviso por voz</label>
       <label class="chk-l"><input type="checkbox" id="r-vib" checked> Vibração</label>
       <label class="chk-l"><input type="checkbox" id="r-pacealert" checked> Alertar ritmo fora do alvo</label>

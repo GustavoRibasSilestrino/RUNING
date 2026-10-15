@@ -157,7 +157,10 @@
     const TARGETS={none:null,z1:[495,Infinity],z2:[450,495],z3:[410,440],z4:[375,400],z5:[345,365],rp:[350,360]};
     const TOL=5;
     const el=id=>document.getElementById(id);
-    const stepKm=()=>parseFloat(el('r-int').value)||1;
+    const stepKm=()=>{const m=parseFloat(el('r-intm').value);return m>0?m/1000:0};
+    const stepT=()=>{const m=parseFloat(el('r-intt').value);return m>0?m*60:0};
+    const distLabel=km=>{const m=Math.round(km*1000);if(m<1000)return m+' metros';const k=Math.floor(m/1000),r=m%1000;
+      return k+(k>1?' quilômetros':' quilômetro')+(r?' e '+r+' metros':'')};
     const elapsed=()=>R.base+(R.t0?(Date.now()-R.t0)/1000*R.scale:0);
     const clock=s=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;
       return (h?h+':'+String(m).padStart(2,'0'):String(m).padStart(2,'0'))+':'+String(x).padStart(2,'0')};
@@ -174,8 +177,9 @@
       if(el('r-voice').checked&&'speechSynthesis' in window){
         try{
           speechSynthesis.cancel();
-          const u=new SpeechSynthesisUtterance(text);u.lang='pt-BR';u.rate=1.0;
-          const v=speechSynthesis.getVoices().find(v=>/pt[-_]BR/i.test(v.lang));if(v)u.voice=v;
+          const u=new SpeechSynthesisUtterance(text);u.lang='pt-BR';u.rate=parseFloat(el('r-rate').value)||1;
+          const vs=speechSynthesis.getVoices(),want=el('r-voicesel').value;
+          const v=vs.find(v=>v.voiceURI===want)||vs.find(v=>/pt[-_]BR/i.test(v.lang));if(v)u.voice=v;
           speechSynthesis.speak(u);
         }catch(e){}
       }
@@ -210,11 +214,11 @@
     function addDist(d){
       const now=elapsed(),prev=R.dist;
       R.dist+=d; R.pts.push({t:now,d:R.dist});
-      const stepM=stepKm()*1000;
+      const stepM=R.step*1000;
       while(R.dist>=R.nextDist){
         const tc=R.prevT+(R.nextDist-prev)/(R.dist-prev)*(now-R.prevT);
         const st=tc-R.markT; R.markT=tc;
-        R.splits.push({t:st,total:tc,km:R.nextDist/1000});
+        R.splits.push({t:st,total:tc,km:R.nextDist/1000,step:R.step});
         R.nextDist+=stepM;
         announceSplit(st);
         renderSplits();
@@ -227,11 +231,9 @@
       }
     }
     function announceSplit(st){
-      const n=R.splits.length,km=n*stepKm(),avg=R.markT/(R.dist/1000||1);
-      const lab=Number.isInteger(km)?km+(km>1?' quilômetros':' quilômetro'):String(km).replace('.',',')+' quilômetro';
-      const pc=st/stepKm();
+      const km=R.splits.length*R.step,lab=distLabel(km),pc=st/R.step;
       status(lab+' · '+pace(pc)+' /km',false);
-      say(lab+'. Tempo do trecho, '+spoken(st)+'. Ritmo médio, '+spoken(R.markT/(km||1))+' por quilômetro. Tempo total, '+spokenLong(R.markT)+'.',[350,120,350]);
+      say(lab+'. Tempo do trecho, '+spoken(st)+'. Ritmo médio, '+spoken(R.markT/km)+' por quilômetro. Tempo total, '+spokenLong(R.markT)+'.',[350,120,350]);
     }
     function currentPace(now){
       R.pts=R.pts.filter(p=>p.t>=now-120);
@@ -249,8 +251,54 @@
       el('r-pace').textContent=pace(cp);
       el('r-avg').textContent=R.dist>50?pace(now/(R.dist/1000)):'--:--';
       const ls=R.splits[R.splits.length-1];
-      el('r-last').textContent=ls?pace(ls.t/stepKm()):'--:--';
-      if(R.state==='run')paceCheck(now,cp);
+      el('r-last').textContent=ls?pace(ls.t/ls.step):'--:--';
+      if(R.state==='run'){paceCheck(now,cp);timeCheck(now);mediaUpdate(now,cp)}
+    }
+    function timeCheck(now){
+      if(now>=R.nextTime){
+        const k=Math.floor(now/R.tStep),t=k*R.tStep;R.nextTime=(k+1)*R.tStep;
+        const avg=R.dist>50?' Ritmo médio, '+spoken(now/(R.dist/1000))+' por quilômetro.':'';
+        status(clock(t)+' · '+km2(R.dist)+' km',false);
+        say(spokenLong(t)+' de treino. Distância, '+distLabel(R.dist/1000)+'.'+avg,[350,120,350]);
+      }
+      const tg=parseFloat(el('r-tgoal').value);
+      if(tg>0&&!R.tGoalDone&&now>=tg*60){R.tGoalDone=true;say('Meta de tempo de '+tg+' minutos atingida. Parabéns!',[600,150,600])}
+    }
+
+    /* tela de bloqueio: áudio silencioso mantém a página viva e o Media Session mostra o treino */
+    let keep=null,mediaTick=0;
+    function silentWav(){
+      const sr=8000,n=sr,b=new Uint8Array(44+n),dv=new DataView(b.buffer);
+      const w=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i))};
+      w(0,'RIFF');dv.setUint32(4,36+n,true);w(8,'WAVEfmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);
+      dv.setUint32(24,sr,true);dv.setUint32(28,sr,true);dv.setUint16(32,1,true);dv.setUint16(34,8,true);w(36,'data');dv.setUint32(40,n,true);
+      for(let i=0;i<n;i++)b[44+i]=128+(i%2);
+      return URL.createObjectURL(new Blob([b],{type:'audio/wav'}));
+    }
+    function keepAlive(on){
+      try{
+        if(on){if(!keep){keep=new Audio(silentWav());keep.loop=true;keep.volume=0.02}keep.play().catch(()=>{})}
+        else if(keep)keep.pause();
+      }catch(e){}
+      if('mediaSession' in navigator){
+        try{
+          if(on){
+            navigator.mediaSession.setActionHandler('play',()=>el('r-pause').click());
+            navigator.mediaSession.setActionHandler('pause',()=>el('r-pause').click());
+          }else{navigator.mediaSession.metadata=null;navigator.mediaSession.playbackState='none'}
+        }catch(e){}
+      }
+    }
+    function mediaUpdate(now,cp){
+      if(!('mediaSession' in navigator)||typeof MediaMetadata==='undefined')return;
+      if(++mediaTick%4)return;
+      try{
+        navigator.mediaSession.metadata=new MediaMetadata({
+          title:clock(now)+' · '+km2(R.dist)+' km',
+          artist:'Ritmo '+pace(cp)+' /km',
+          album:'Ciclo 1 · Treino'});
+        navigator.mediaSession.playbackState=R.state==='run'?'playing':'paused';
+      }catch(e){}
     }
     function paceCheck(now,cp){
       const t=target();
@@ -266,7 +314,7 @@
     function renderSplits(){
       const b=el('r-splits');
       if(!R.splits.length){b.innerHTML='<tr><td colspan="4" class="mini">As parciais aparecem aqui durante o treino.</td></tr>';return}
-      b.innerHTML=R.splits.map((s,i)=>`<tr><td><b>${String(s.km).replace('.',',')} km</b></td><td class="mono">${clock(s.t)}</td><td class="mono">${pace(s.t/stepKm())} /km</td><td class="mono">${clock(s.total)}</td></tr>`).reverse().join('');
+      b.innerHTML=R.splits.map((s,i)=>`<tr><td><b>${String(s.km).replace('.',',')} km</b></td><td class="mono">${clock(s.t)}</td><td class="mono">${pace(s.t/s.step)} /km</td><td class="mono">${clock(s.total)}</td></tr>`).reverse().join('');
     }
     function buttons(){
       const s=R.state;
@@ -284,12 +332,15 @@
 
     /* controle */
     function reset(){
-      R.dist=0;R.base=0;R.t0=null;R.prevT=0;R.markT=0;R.nextDist=stepKm()*1000;R.pts=[];R.splits=[];R.last=null;
+      R.dist=0;R.base=0;R.t0=null;R.prevT=0;R.markT=0;R.nextDist=Infinity;R.nextTime=Infinity;R.step=0;R.tStep=0;R.tGoalDone=false;
+      R.pts=[];R.splits=[];R.last=null;
       R.offKind=null;R.lastSpeak=-99;R.goalDone=false;
       el('r-summary').hidden=true;renderSplits();render();
     }
     function begin(){
       R.state='run';R.scale=el('r-sim').checked?10:1;R.t0=Date.now();R.prevT=0;
+      R.step=stepKm();R.tStep=stepT();
+      R.nextDist=R.step>0?R.step*1000:Infinity;R.nextTime=R.tStep>0?R.tStep:Infinity;R.tGoalDone=false;
       if(el('r-sim').checked){
         R.sim=setInterval(()=>{
           if(R.state!=='run')return;
@@ -310,6 +361,7 @@
       if(R.state==='done')reset();
       if(!el('r-sim').checked&&!('geolocation' in navigator)){status('Este navegador não tem GPS. Use a opção de simulação para testar.',true);return}
       R.state='count';buttons();status('Prepare-se…',false);
+      keepAlive(true);
       if('speechSynthesis' in window&&el('r-voice').checked){try{speechSynthesis.cancel()}catch(e){}}
       say('Preparar. Três, dois, um, vai!',[150,100,150,100,400]);
       R.count=setTimeout(begin,4000);
@@ -329,7 +381,7 @@
       const total=elapsed();
       R.t0=null;R.base=total;R.state='done';
       clearInterval(R.tick);clearInterval(R.sim);
-      if(R.watch!=null)navigator.geolocation.clearWatch(R.watch);R.watch=null;unlock();
+      if(R.watch!=null)navigator.geolocation.clearWatch(R.watch);R.watch=null;unlock();keepAlive(false);
       render();buttons();
       const avg=R.dist>0?total/(R.dist/1000):0;
       el('r-sum-txt').textContent=`Treino finalizado: ${km2(R.dist)} km em ${clock(total)} · ritmo médio ${pace(avg)} /km`;
@@ -365,6 +417,30 @@
           <td class="mono">${String(r.dist.toFixed(2)).replace('.',',')} km</td><td class="mono">${clock(r.time)}</td>
           <td class="mono">${r.dist>0?pace(r.time/r.dist):'--:--'} /km</td></tr>`}).join('');
     }
+    /* vozes disponíveis + teste */
+    function loadVoices(){
+      if(!('speechSynthesis' in window))return;
+      const all=speechSynthesis.getVoices(),pt=all.filter(v=>/^pt/i.test(v.lang)),list=pt.length?pt:all;
+      const sel=el('r-voicesel'),cur=sel.value||prefs['r-voicesel']||'';
+      sel.innerHTML='<option value="">Padrão do aparelho</option>'+list.map(v=>`<option value="${v.voiceURI}">${v.name} (${v.lang})</option>`).join('');
+      if([...sel.options].some(o=>o.value===cur))sel.value=cur;
+    }
+    el('r-voicetest').addEventListener('click',()=>say('Quilômetro 1. Tempo do trecho, 6 minutos e 2 segundos. Ritmo médio, 6 minutos e 2 segundos por quilômetro.',[300]));
+
+    /* lembrar configurações */
+    const PREF=['r-target','r-min','r-max','r-intm','r-intt','r-goal','r-tgoal','r-voice','r-vib','r-pacealert','r-voicesel','r-rate'];
+    const prefs=store.get('runprefs',{});
+    PREF.forEach(id=>{
+      const x=el(id);if(prefs[id]==null)return;
+      if(x.type==='checkbox')x.checked=!!prefs[id];else x.value=prefs[id];
+      x.dispatchEvent(new Event('change'));
+    });
+    PREF.forEach(id=>el(id).addEventListener('change',()=>{
+      const x=el(id);prefs[id]=x.type==='checkbox'?x.checked:x.value;store.set('runprefs',prefs);
+    }));
+    loadVoices();
+    if('speechSynthesis' in window)speechSynthesis.addEventListener('voiceschanged',loadVoices);
+
     reset();buttons();fillSlots();renderHist();
     if(!('vibrate' in navigator))el('r-vib').parentElement.title='Este aparelho/navegador não vibra';
   })();
