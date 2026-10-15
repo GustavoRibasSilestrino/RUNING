@@ -186,6 +186,71 @@
     }
     const status=(t,alert)=>{const s=el('r-status');s.textContent=t;s.classList.toggle('alert',!!alert)};
 
+    /* modos: corrida livre x treino de tiros */
+    function setMode(m){
+      const intv=m==='int';
+      el('m-free').classList.toggle('on',!intv);el('m-int').classList.toggle('on',intv);
+      el('m-free').setAttribute('aria-selected',String(!intv));el('m-int').setAttribute('aria-selected',String(intv));
+      el('p-free').hidden=intv;el('p-int').hidden=!intv;el('l-pace').hidden=intv;
+      store.set('runmode',m);
+    }
+    function setModeEnabled(on){el('m-free').disabled=!on;el('m-int').disabled=!on}
+    el('m-free').addEventListener('click',()=>setMode('free'));
+    el('m-int').addEventListener('click',()=>setMode('int'));
+    document.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{
+      const [reps,rv,ru,sv,su]=b.dataset.p.split(',');
+      el('r-reps').value=reps;el('r-runv').value=rv;el('r-runu').value=ru;el('r-restv').value=sv;el('r-restu').value=su;
+      ['r-reps','r-runv','r-runu','r-restv','r-restu'].forEach(id=>el(id).dispatchEvent(new Event('change')));
+    }));
+
+    /* treino de tiros: fases */
+    function buildPlan(){
+      const n=id=>parseFloat(el(id).value)||0,p=[];
+      const wu=n('r-wu'),cd=n('r-cd'),reps=Math.max(1,Math.round(n('r-reps'))||1);
+      const rv=n('r-runv')||1,ru=el('r-runu').value,sv=n('r-restv'),su=el('r-restu').value;
+      if(wu>0)p.push({k:'warm',kind:'time',v:wu*60,label:'Aquecimento'});
+      for(let i=1;i<=reps;i++){
+        p.push({k:'run',kind:ru==='m'?'dist':'time',v:ru==='m'?rv:rv*60,label:'Tiro '+i+'/'+reps,i,reps});
+        if(i<reps&&sv>0)p.push({k:'rest',kind:su==='m'?'dist':'time',v:su==='m'?sv:su==='s'?sv:sv*60,label:'Caminhar'});
+      }
+      if(cd>0)p.push({k:'cool',kind:'time',v:cd*60,label:'Desaquecimento'});
+      return p;
+    }
+    const phDur=ph=>ph.kind==='dist'?distLabel(ph.v/1000):spoken(ph.v);
+    const phShort=ph=>ph.kind==='dist'?Math.round(ph.v)+' m':clock(ph.v);
+    function phaseText(ph){
+      if(ph.k==='warm')return 'Aquecimento. '+phDur(ph)+' em ritmo leve.';
+      if(ph.k==='run')return 'Tiro '+ph.i+' de '+ph.reps+'. Corra '+phDur(ph)+'.';
+      if(ph.k==='rest')return 'Caminhe por '+phDur(ph)+'.';
+      return 'Desaquecimento. '+phDur(ph)+' em ritmo leve.';
+    }
+    function startPhase(prefix){
+      const ph=R.plan[R.pi],now=elapsed();
+      R.phT=now;R.phD=R.dist;R.warn={};
+      const box=el('r-phase');box.className='phase '+ph.k;
+      el('r-ph-name').textContent=ph.label;
+      const nx=R.plan[R.pi+1];
+      el('r-ph-next').textContent=nx?'Depois: '+(nx.k==='run'?'correr ':nx.k==='rest'?'caminhar ':'')+phShort(nx):'Última fase';
+      status(phaseText(ph),false);
+      say((prefix||'')+phaseText(ph),ph.k==='run'?[500,120,500]:ph.k==='rest'?[250]:[200]);
+    }
+    function intCheck(now){
+      const ph=R.plan[R.pi];if(!ph)return;
+      const done=ph.kind==='dist'?(R.dist-R.phD):(now-R.phT),left=ph.v-done;
+      el('r-ph-left').textContent=ph.kind==='dist'?Math.max(0,Math.ceil(left))+' m':clock(Math.max(0,left));
+      el('r-ph-bar').style.width=Math.min(100,done/ph.v*100)+'%';
+      if(left<=0){endPhase(now,ph);return}
+      if(ph.kind==='time'&&ph.v>=30&&left<=10&&!R.warn.t){R.warn.t=1;say(ph.k==='rest'?'Prepare-se. Dez segundos.':'Dez segundos.',[120])}
+      if(ph.kind==='dist'&&ph.v>=300&&left<=100&&!R.warn.d){R.warn.d=1;say('Faltam cem metros.',[120])}
+    }
+    function endPhase(now,ph){
+      const dk=(R.dist-R.phD)/1000;
+      R.splits.push({label:ph.label,t:now-R.phT,total:now,step:dk});
+      renderSplits();
+      R.pi++;
+      if(R.pi>=R.plan.length){doFinish();return}
+      startPhase('');
+    }
     /* alvo */
     function target(){
       const k=el('r-target').value;
@@ -252,7 +317,7 @@
       el('r-avg').textContent=R.dist>50?pace(now/(R.dist/1000)):'--:--';
       const ls=R.splits[R.splits.length-1];
       el('r-last').textContent=ls?pace(ls.t/ls.step):'--:--';
-      if(R.state==='run'){paceCheck(now,cp);timeCheck(now);mediaUpdate(now,cp)}
+      if(R.state==='run'){if(R.mode==='int')intCheck(now);else{paceCheck(now,cp);timeCheck(now)}mediaUpdate(now,cp)}
     }
     function timeCheck(now){
       if(now>=R.nextTime){
@@ -296,13 +361,13 @@
         navigator.mediaSession.metadata=new MediaMetadata({
           title:clock(now)+' · '+km2(R.dist)+' km',
           artist:'Ritmo '+pace(cp)+' /km',
-          album:'Ciclo 1 · Treino'});
+          album:'Cycle · Treino'});
         navigator.mediaSession.playbackState=R.state==='run'?'playing':'paused';
       }catch(e){}
     }
     function paceCheck(now,cp){
       const t=target();
-      if(!t||!el('r-pacealert').checked||cp==null||now<45||R.dist<100)return;
+      if(R.mode==='int'||!t||!el('r-pacealert').checked||cp==null||now<45||R.dist<100)return;
       const kind=cp<t[0]-TOL?'fast':cp>t[1]+TOL?'slow':null;
       if(!kind){R.offKind=null;return}
       if(R.offKind!==kind){R.offKind=kind;R.offSince=now;return}
@@ -314,7 +379,7 @@
     function renderSplits(){
       const b=el('r-splits');
       if(!R.splits.length){b.innerHTML='<tr><td colspan="4" class="mini">As parciais aparecem aqui durante o treino.</td></tr>';return}
-      b.innerHTML=R.splits.map((s,i)=>`<tr><td><b>${String(s.km).replace('.',',')} km</b></td><td class="mono">${clock(s.t)}</td><td class="mono">${pace(s.t/s.step)} /km</td><td class="mono">${clock(s.total)}</td></tr>`).reverse().join('');
+      b.innerHTML=R.splits.map((s,i)=>`<tr><td><b>${s.label||String(s.km).replace('.',',')+' km'}</b></td><td class="mono">${clock(s.t)}</td><td class="mono">${pace(s.t/s.step)} /km</td><td class="mono">${clock(s.total)}</td></tr>`).reverse().join('');
     }
     function buttons(){
       const s=R.state;
@@ -335,11 +400,13 @@
       R.dist=0;R.base=0;R.t0=null;R.prevT=0;R.markT=0;R.nextDist=Infinity;R.nextTime=Infinity;R.step=0;R.tStep=0;R.tGoalDone=false;
       R.pts=[];R.splits=[];R.last=null;
       R.offKind=null;R.lastSpeak=-99;R.goalDone=false;
-      el('r-summary').hidden=true;renderSplits();render();
+      R.mode=R.mode||'free';R.plan=[];R.pi=0;
+      el('r-summary').hidden=true;el('r-phase').hidden=true;renderSplits();render();
     }
     function begin(){
       R.state='run';R.scale=el('r-sim').checked?10:1;R.t0=Date.now();R.prevT=0;
-      R.step=stepKm();R.tStep=stepT();
+      R.mode=el('m-int').classList.contains('on')?'int':'free';
+      R.step=R.mode==='int'?0:stepKm();R.tStep=R.mode==='int'?0:stepT();
       R.nextDist=R.step>0?R.step*1000:Infinity;R.nextTime=R.tStep>0?R.tStep:Infinity;R.tGoalDone=false;
       if(el('r-sim').checked){
         R.sim=setInterval(()=>{
@@ -355,12 +422,13 @@
       }
       R.tick=setInterval(render,500);
       lock();buttons();status('Treino em andamento',false);
-      say('Treino iniciado.',[200]);
+      if(R.mode==='int'){R.plan=buildPlan();R.pi=0;el('r-phase').hidden=false;startPhase('Treino iniciado. ')}
+      else say('Treino iniciado.',[200]);
     }
     el('r-start').addEventListener('click',()=>{
       if(R.state==='done')reset();
       if(!el('r-sim').checked&&!('geolocation' in navigator)){status('Este navegador não tem GPS. Use a opção de simulação para testar.',true);return}
-      R.state='count';buttons();status('Prepare-se…',false);
+      R.state='count';buttons();setModeEnabled(false);status('Prepare-se…',false);
       keepAlive(true);
       if('speechSynthesis' in window&&el('r-voice').checked){try{speechSynthesis.cancel()}catch(e){}}
       say('Preparar. Três, dois, um, vai!',[150,100,150,100,400]);
@@ -376,8 +444,9 @@
       }
       buttons();
     });
-    el('r-finish').addEventListener('click',()=>{
-      if(!confirm('Finalizar o treino?'))return;
+    el('r-finish').addEventListener('click',()=>{if(confirm('Finalizar o treino?'))doFinish()});
+    function doFinish(){
+      if(R.state==='done')return;
       const total=elapsed();
       R.t0=null;R.base=total;R.state='done';
       clearInterval(R.tick);clearInterval(R.sim);
@@ -391,7 +460,8 @@
       const runs=store.get('runs',[]);
       runs.unshift({d:new Date().toISOString(),dist:+(R.dist/1000).toFixed(2),time:Math.round(total)});
       store.set('runs',runs.slice(0,30));renderHist();fillSlots();
-    });
+      el('r-phase').hidden=true;setModeEnabled(true);
+    }
     window.addEventListener('beforeunload',e=>{if(R.state==='run'||R.state==='pause'){e.preventDefault();e.returnValue=''}});
 
     /* salvar no registro */
@@ -428,7 +498,7 @@
     el('r-voicetest').addEventListener('click',()=>say('Quilômetro 1. Tempo do trecho, 6 minutos e 2 segundos. Ritmo médio, 6 minutos e 2 segundos por quilômetro.',[300]));
 
     /* lembrar configurações */
-    const PREF=['r-target','r-min','r-max','r-intm','r-intt','r-goal','r-tgoal','r-voice','r-vib','r-pacealert','r-voicesel','r-rate'];
+    const PREF=['r-wu','r-reps','r-runv','r-runu','r-restv','r-restu','r-cd','r-target','r-min','r-max','r-intm','r-intt','r-goal','r-tgoal','r-voice','r-vib','r-pacealert','r-voicesel','r-rate'];
     const prefs=store.get('runprefs',{});
     PREF.forEach(id=>{
       const x=el(id);if(prefs[id]==null)return;
@@ -441,6 +511,7 @@
     loadVoices();
     if('speechSynthesis' in window)speechSynthesis.addEventListener('voiceschanged',loadVoices);
 
+    setMode(store.get('runmode','free'));
     reset();buttons();fillSlots();renderHist();
     if(!('vibrate' in navigator))el('r-vib').parentElement.title='Este aparelho/navegador não vibra';
   })();

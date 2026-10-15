@@ -3,18 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ciclo 1 — 10 semanas até o 5 km</title>
+<title>Cycle — plano de corrida de 10 semanas</title>
 <meta name="theme-color" content="#0e0e0d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cycle">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="logo.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="top">
   <div class="wrap bar">
-    <a class="brand" href="#inicio">Ciclo<b>1</b> <span>/ 10 semanas</span></a>
+    <a class="brand" href="#inicio"><img src="logo.png" alt="" width="40" height="40"><span class="bn">Cycle</span></a>
     <nav class="tabs" role="tablist" aria-label="Seções">
       <button role="tab" data-tab="inicio">Início</button>
       <button role="tab" data-tab="treino">Treino</button>
@@ -82,6 +89,11 @@
   <div class="run">
     <div class="run-main">
       <div class="run-time" id="r-time">00:00</div>
+      <div class="phase" id="r-phase" hidden>
+        <div class="phase-top"><span id="r-ph-name">Aquecimento</span><span class="mini" id="r-ph-next"></span></div>
+        <div class="phase-left" id="r-ph-left">0:00</div>
+        <div class="bar"><i id="r-ph-bar"></i></div>
+      </div>
       <div class="run-grid">
         <div><small>Distância</small><b id="r-dist">0,00</b><i>km</i></div>
         <div><small>Ritmo atual</small><b id="r-pace">--:--</b><i>/km</i></div>
@@ -104,42 +116,77 @@
     </div>
 
     <aside class="run-set card">
-      <div class="kicker">Alertas</div>
-      <div class="fld"><label class="f" for="r-target">Ritmo alvo</label>
-        <select id="r-target">
-          <option value="none">Sem alvo</option>
-          <option value="z1">Z1 · acima de 8:15</option>
-          <option value="z2" selected>Z2 · 7:30 – 8:15</option>
-          <option value="z3">Z3 · 6:50 – 7:20</option>
-          <option value="z4">Z4 · 6:15 – 6:40</option>
-          <option value="z5">Z5 · 5:45 – 6:05</option>
-          <option value="rp">RP · 5:50 – 6:00</option>
-          <option value="custom">Personalizado</option>
-        </select></div>
-      <div class="fld two" id="r-custom" hidden>
-        <div><label class="f" for="r-min">Mais rápido (mm:ss)</label><input id="r-min" type="text" value="6:00"></div>
-        <div><label class="f" for="r-max">Mais lento (mm:ss)</label><input id="r-max" type="text" value="6:30"></div>
+      <div class="seg" role="tablist" aria-label="Tipo de treino">
+        <button type="button" id="m-free" class="on" role="tab" aria-selected="true">Corrida livre</button>
+        <button type="button" id="m-int" role="tab" aria-selected="false">Treino de tiros</button>
       </div>
-      <div class="fld two">
-        <div><label class="f" for="r-intm">Avisar a cada (metros)</label><input id="r-intm" type="number" min="0" step="50" value="1000" placeholder="1000"></div>
-        <div><label class="f" for="r-intt">Avisar a cada (minutos)</label><input id="r-intt" type="number" min="0" step="0.5" placeholder="5"></div>
+
+      <div id="p-free">
+        <div class="fld"><label class="f" for="r-target">Ritmo alvo</label>
+          <select id="r-target">
+            <option value="none">Sem alvo</option>
+            <option value="z1">Z1 · acima de 8:15</option>
+            <option value="z2" selected>Z2 · 7:30 – 8:15</option>
+            <option value="z3">Z3 · 6:50 – 7:20</option>
+            <option value="z4">Z4 · 6:15 – 6:40</option>
+            <option value="z5">Z5 · 5:45 – 6:05</option>
+            <option value="rp">RP · 5:50 – 6:00</option>
+            <option value="custom">Personalizado</option>
+          </select></div>
+        <div class="fld two" id="r-custom" hidden>
+          <div><label class="f" for="r-min">Mais rápido</label><input id="r-min" type="text" value="6:00"></div>
+          <div><label class="f" for="r-max">Mais lento</label><input id="r-max" type="text" value="6:30"></div>
+        </div>
+        <div class="fld"><label class="f" for="r-intm">Avisar a cada</label>
+          <select id="r-intm">
+            <option value="0">Desligado</option>
+            <option value="500">500 m</option>
+            <option value="1000" selected>1 km</option>
+            <option value="2000">2 km</option>
+            <option value="5000">5 km</option>
+          </select></div>
+        <details class="more"><summary>Mais opções</summary>
+          <div class="fld two">
+            <div><label class="f" for="r-intt">Avisar a cada (min)</label><input id="r-intt" type="number" min="0" step="0.5" placeholder="5"></div>
+            <div></div>
+            <div><label class="f" for="r-goal">Meta (km)</label><input id="r-goal" type="number" min="0" step="0.1" placeholder="5"></div>
+            <div><label class="f" for="r-tgoal">Meta (min)</label><input id="r-tgoal" type="number" min="0" step="1" placeholder="30"></div>
+          </div>
+        </details>
       </div>
-      <p class="mini" style="margin-top:6px">Use um, outro ou os dois. Deixe em branco (ou 0) para desligar.</p>
-      <div class="fld two">
-        <div><label class="f" for="r-goal">Meta de distância (km)</label><input id="r-goal" type="number" min="0" step="0.1" placeholder="5"></div>
-        <div><label class="f" for="r-tgoal">Meta de tempo (min)</label><input id="r-tgoal" type="number" min="0" step="1" placeholder="30"></div>
+
+      <div id="p-int" hidden>
+        <div class="chips" aria-label="Atalhos">
+          <button type="button" class="chip" data-p="6,400,m,2,min">6 × 400 m</button>
+          <button type="button" class="chip" data-p="6,2,min,2,min">6 × 2 min</button>
+          <button type="button" class="chip" data-p="8,1,min,90,s">8 × 1 min</button>
+          <button type="button" class="chip" data-p="3,6,min,2,min">3 × 6 min</button>
+        </div>
+        <div class="fld two">
+          <div><label class="f" for="r-reps">Repetições</label><input id="r-reps" type="number" min="1" max="30" value="6"></div>
+          <div></div>
+        </div>
+        <div class="fld"><label class="f">Correr por</label>
+          <div class="pair"><input id="r-runv" type="number" min="1" value="400" aria-label="Valor"><select id="r-runu" aria-label="Unidade"><option value="m" selected>metros</option><option value="min">minutos</option></select></div></div>
+        <div class="fld"><label class="f">Caminhar por</label>
+          <div class="pair"><input id="r-restv" type="number" min="0" value="2" aria-label="Valor"><select id="r-restu" aria-label="Unidade"><option value="min" selected>minutos</option><option value="s">segundos</option><option value="m">metros</option></select></div></div>
+        <div class="fld two">
+          <div><label class="f" for="r-wu">Aquecimento (min)</label><input id="r-wu" type="number" min="0" value="5"></div>
+          <div><label class="f" for="r-cd">Desaquec. (min)</label><input id="r-cd" type="number" min="0" value="5"></div>
+        </div>
       </div>
-      <div class="kicker" style="margin-top:22px">Voz</div>
-      <div class="fld"><label class="f" for="r-voicesel">Voz do narrador</label><select id="r-voicesel"><option value="">Padrão do aparelho</option></select></div>
-      <div class="fld"><label class="f" for="r-rate">Velocidade da fala</label><input id="r-rate" type="range" min="0.7" max="1.4" step="0.05" value="1" style="width:100%;accent-color:var(--track)"></div>
-      <button class="sm" id="r-voicetest" style="margin-top:12px">Testar voz</button>
-      <label class="chk-l"><input type="checkbox" id="r-voice" checked> Aviso por voz</label>
-      <label class="chk-l"><input type="checkbox" id="r-vib" checked> Vibração</label>
-      <label class="chk-l"><input type="checkbox" id="r-pacealert" checked> Alertar ritmo fora do alvo</label>
-      <label class="chk-l"><input type="checkbox" id="r-sim"> Simular corrida (teste, sem GPS)</label>
-      <p class="mini" style="margin-top:12px">Mantenha a tela ligada durante o treino. A vibração funciona em Android; no iPhone só a voz.</p>
-    </aside>
-  </div>
+
+      <details class="more"><summary>Voz e avisos</summary>
+        <label class="chk-l"><input type="checkbox" id="r-voice" checked> Aviso por voz</label>
+        <label class="chk-l"><input type="checkbox" id="r-vib" checked> Vibração <span class="mini">(só Android)</span></label>
+        <label class="chk-l" id="l-pace"><input type="checkbox" id="r-pacealert" checked> Alertar ritmo fora do alvo</label>
+        <div class="fld"><label class="f" for="r-voicesel">Voz</label><select id="r-voicesel"><option value="">Padrão do aparelho</option></select></div>
+        <div class="fld"><label class="f" for="r-rate">Velocidade da fala</label><input id="r-rate" type="range" min="0.7" max="1.4" step="0.05" value="1" style="width:100%;accent-color:var(--track)"></div>
+        <button class="sm" id="r-voicetest" type="button" style="margin-top:12px">Testar voz</button>
+        <label class="chk-l"><input type="checkbox" id="r-sim"> Simular corrida (teste, sem GPS)</label>
+      </details>
+      <p class="mini" style="margin-top:14px">Mantenha a tela ligada durante o treino.</p>
+    </aside>  </div>
 
   <div class="rule"></div>
   <h3>Parciais</h3>
@@ -336,7 +383,7 @@
 
 </main>
 
-<footer><div class="wrap">Plano de Corrida · Ciclo 1 · 10 semanas · início 19/10/2026 · teste final 26/12/2026</div></footer>
+<footer><div class="wrap">Cycle · Plano de Corrida · Ciclo 1 · 10 semanas · início 19/10/2026 · teste final 26/12/2026</div></footer>
 
 <script src="script.js"></script>
 </body>

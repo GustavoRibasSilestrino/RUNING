@@ -1,0 +1,7 @@
+﻿{
+  "appId": "com.gustavo.cycle",
+  "appName": "Cycle",
+  "webDir": "www",
+  "backgroundColor": "#0e0e0d",
+  "android": { "backgroundColor": "#0e0e0d" }
+}

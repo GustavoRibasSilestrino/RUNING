@@ -1,0 +1,14 @@
+﻿{
+  "name": "Cycle",
+  "short_name": "Cycle",
+  "description": "Plano de corrida de 10 semanas com treino por GPS",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e0e0d",
+  "theme_color": "#0e0e0d",
+  "icons": [
+    { "src": "logo.png", "sizes": "640x640", "type": "image/png", "purpose": "any" }
+  ]
+}
