@@ -244,3 +244,5 @@ details.more[open] summary::after{content:"–"}
 .phase.rest .bar i{background:var(--z2)}
 .phase.warm .bar i,.phase.cool .bar i{background:var(--z1)}
 [hidden]{display:none!important}
+.brand img{width:44px;height:44px}
+.brand .bn{display:none}
