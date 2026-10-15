@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ciclo 1 — 10 semanas até o 5 km</title>
+<meta name="theme-color" content="#f2efe8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="#inicio">Ciclo<b>1</b> <span>/ 10 semanas</span></a>
+    <nav class="tabs" role="tablist" aria-label="Seções">
+      <button role="tab" data-tab="inicio">Início</button>
+      <button role="tab" data-tab="zonas">Zonas</button>
+      <button role="tab" data-tab="rotina">Rotina</button>
+      <button role="tab" data-tab="plano">Plano</button>
+      <button role="tab" data-tab="registro">Registro</button>
+      <button role="tab" data-tab="evolucao">Evolução</button>
+      <button role="tab" data-tab="cuidados">Cuidados</button>
+      <button role="tab" data-tab="ciclo2">Ciclo 2</button>
+    </nav>
+    <button class="themebtn" id="theme" aria-label="Alternar tema claro/escuro">◐</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- INÍCIO -->
+<section class="view" id="inicio">
+  <div class="hero">
+    <div>
+      <div class="kicker">19/10/2026 → 26/12/2026 · seg · qua · sáb</div>
+      <h1>10 semanas.<br><em>5 km</em> em<br>29–30 min.</h1>
+    </div>
+    <p class="lead">Um plano de três treinos por semana para sair dos ~31:00 e chegar ao teste final entre 29:00 e 30:00 — sem se machucar no caminho. A meta que importa é completar as 30 sessões.</p>
+    <div><a class="cta" href="#plano" data-go="plano">Ver o plano</a> &nbsp; <a class="cta ghost" href="#registro" data-go="registro">Abrir registro</a></div>
+    <div class="facts">
+      <div><div class="n" id="cd-n">—</div><div class="l" id="cd-l">até o início</div></div>
+      <div><div class="n">30</div><div class="l">sessões no ciclo</div></div>
+      <div><div class="n">2</div><div class="l">semanas de recuperação</div></div>
+      <div><div class="n">80%</div><div class="l">do volume em Z1–Z2</div></div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="kicker">Ponto de partida</div>
+  <h2>Onde você está hoje</h2>
+  <div class="cols">
+    <div class="c7">
+      <div class="tw"><table>
+        <thead><tr><th>Altura</th><th>Peso</th><th>IMC</th><th>5 km atual</th><th>Ritmo médio</th></tr></thead>
+        <tbody><tr class="mono"><td>1,88 m</td><td>112 kg</td><td>31,7</td><td>~31:00</td><td>~6:12 /km</td></tr></tbody>
+      </table></div>
+      <div class="note">
+        <p><b>Por que o plano é conservador.</b> Com 112 kg, cada passada gera impacto alto em joelhos, canelas e tendão de Aquiles. O volume sobe devagar (no máximo ~10% por semana), a maior parte do tempo é em ritmo leve e as semanas 4 e 8 são de recuperação.</p>
+        <p>O que mais vai te fazer evoluir agora não são os tiros fortes, e sim a <b>consistência</b>: completar as 30 sessões sem se machucar.</p>
+      </div>
+    </div>
+    <div class="c5">
+      <div class="card">
+        <div class="kicker">Meta do ciclo</div>
+        <div class="stat" style="margin:6px 0 2px"><span class="big">29:00–30:00</span></div>
+        <div class="u mono" style="color:var(--ink-2)">teste dos 5 km · ritmo 5:48 a 6:00 /km</div>
+        <div class="rule" style="margin:18px 0"></div>
+        <p><b>Contínuo mais longo:</b> 60 minutos em zona 2 sem parar.</p>
+        <p><b>Duração:</b> 10 semanas. Depois volte com o novo tempo de 5 km para o Ciclo 2.</p>
+      </div>
+    </div>
+  </div>
+  <p style="margin-top:22px;max-width:70ch;color:var(--ink-2)">Iniciantes costumam melhorar de 4% a 7% no 5 km em 8 a 12 semanas de treino regular. Se você também perder peso no período, o ganho tende a ser maior: cada quilo a menos costuma valer alguns segundos por km.</p>
+</section>
+
+<!-- ZONAS -->
+<section class="view" id="zonas">
+  <div class="kicker">Intensidade</div>
+  <h2>Suas zonas de treino</h2>
+  <p class="lead">Calculadas a partir do seu 5 km em 31 minutos. Use o ritmo como referência, mas em dias de calor, subida ou cansaço confie na <b>sensação</b> (esforço de 1 a 10) e no teste da fala. Com relógio de FC, use também a coluna de % da FC máxima.</p>
+  <div style="height:28px"></div>
+
+  <div id="zones"></div>
+
+  <div class="cols" style="margin-top:34px">
+    <div class="c6">
+      <div class="card">
+        <div class="kicker">Calculadora de FC</div>
+        <h3 style="margin:6px 0 14px">FC máxima estimada: 208 − (0,7 × idade)</h3>
+        <div class="calc">
+          <div><label class="f" for="age">Sua idade</label><input id="age" type="number" min="14" max="90" placeholder="30"></div>
+          <div class="mono" style="padding-bottom:9px">FC máx. <b id="fcmax">—</b></div>
+        </div>
+        <p class="mini" style="margin-top:10px">Exemplo: 30 anos = 187 bpm, então Z2 fica em 131–146 bpm.</p>
+      </div>
+    </div>
+    <div class="c6">
+      <div class="note" style="margin-top:0">
+        <p><b>Ritmo alvo de prova (RP):</b> 5:50 a 6:00 /km — é o ritmo do teste final.</p>
+        <p><b>Regra de ouro:</b> cerca de 80% do seu tempo total de corrida deve ser em Z1–Z2. Se a Z2 ficar difícil de manter correndo, alterne corrida e caminhada (ex.: 4 min correndo / 1 min andando). Isso não é falha, é treino.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROTINA -->
+<section class="view" id="rotina">
+  <div class="kicker">Estrutura</div>
+  <h2>Como funciona a semana</h2>
+  <div class="week7">
+    <div class="day hit"><div class="d">Seg</div><div class="t">Qualidade</div><p>Tiros, fartlek, pirâmide, limiar. Melhora velocidade e o limiar — o que mais baixa o tempo do 5 km.</p></div>
+    <div class="day rest"><div class="d">Ter</div><div class="t">Força</div><p>Fortalecimento 20–30 min ou caminhada leve.</p></div>
+    <div class="day hit"><div class="d">Qua</div><div class="t">Leve + técnica</div><p>Z2 com educativos, acelerações ou subidas. Base aeróbica e força específica sem desgastar.</p></div>
+    <div class="day rest"><div class="d">Qui</div><div class="t">Descanso</div><p>Descanso ou caminhada leve.</p></div>
+    <div class="day rest"><div class="d">Sex</div><div class="t">Força</div><p>Fortalecimento 20–30 min ou caminhada leve.</p></div>
+    <div class="day hit"><div class="d">Sáb</div><div class="t">Longão</div><p>Z2, às vezes com trechos progressivos. Resistência e adaptação de tendões e articulações.</p></div>
+    <div class="day rest"><div class="d">Dom</div><div class="t">Descanso</div><p>Descanso ou caminhada leve. Recuperar e prevenir lesões.</p></div>
+  </div>
+
+  <div class="cols" style="margin-top:44px">
+    <div class="c6">
+      <h3>Aquecimento padrão</h3>
+      <p style="margin-top:8px">5 min de caminhada rápida + 5 min de trote em Z1 + mobilidade: 10 círculos de quadril, 10 balanços de perna para cada lado, 10 elevações de panturrilha.</p>
+      <p>Nos treinos de segunda, acrescente 2 educativos de 20 m: skipping baixo e anfersen (calcanhar no glúteo).</p>
+      <h3 style="margin-top:28px">Desaquecimento</h3>
+      <p style="margin-top:8px">5 min de trote em Z1 ou caminhada + alongamento leve de panturrilha, posterior de coxa e quadril.</p>
+    </div>
+    <div class="c6">
+      <h3>Fortalecimento · 2× por semana</h3>
+      <p class="mini" style="margin:6px 0 8px">Ex.: terça e sexta · 3 séries de cada</p>
+      <ul class="ex">
+        <li><span>Agachamento livre ou na cadeira</span><span>12</span></li>
+        <li><span>Afundo alternado</span><span>10 / perna</span></li>
+        <li><span>Elevação de quadril / ponte</span><span>15</span></li>
+        <li><span>Elevação de panturrilha unilateral</span><span>12 / perna</span></li>
+        <li><span>Prancha</span><span>30 s</span></li>
+        <li><span>Prancha lateral</span><span>20 s / lado</span></li>
+      </ul>
+      <p style="margin-top:12px;color:var(--ink-2)">Fortalecer glúteos e panturrilhas é a melhor proteção contra lesões para corredores mais pesados.</p>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+  <h3>Glossário dos treinos</h3>
+  <dl class="gl" style="margin-top:12px">
+    <dt>Tiro</dt><dd>Trecho rápido na zona indicada, seguido de recuperação (trote Z1 ou caminhada).</dd>
+    <dt>Fartlek</dt><dd>Variações de ritmo por tempo: rápido / devagar, sem parar de se mover.</dd>
+    <dt>Aceleração</dt><dd>(strides) 15–20 s acelerando de forma progressiva até ~Z5, solto e relaxado; volta caminhando.</dd>
+    <dt>Subida</dt><dd>Tiros curtos em ladeira de inclinação moderada, esforço forte; desce caminhando.</dd>
+    <dt>Progressivo</dt><dd>Começa em Z2 e termina os últimos minutos em Z3.</dd>
+    <dt>RP</dt><dd>Ritmo de prova alvo: 5:50 a 6:00 /km.</dd>
+  </dl>
+</section>
+
+<!-- PLANO -->
+<section class="view" id="plano">
+  <div class="kicker">Semana a semana</div>
+  <h2>O plano</h2>
+  <p class="lead">Todos os treinos incluem aquecimento e desaquecimento, exceto quando indicado. Tempo aproximado de cada sessão entre parênteses.</p>
+  <div style="height:26px"></div>
+  <div class="card flat">
+    <div class="mini" style="margin-bottom:10px">MINUTOS DE CORRIDA POR SEMANA (soma das 3 sessões, pelos tempos do plano)</div>
+    <div class="vol" id="vol"></div>
+    <div class="vol-lab" id="vollab"></div>
+  </div>
+  <div style="height:26px"></div>
+  <div id="weeks"></div>
+  <div class="note"><p><b>Faltou um treino?</b> Não tente compensar dobrando. Siga o plano do próximo dia normalmente. Se perder uma semana inteira, repita a semana anterior antes de seguir.</p></div>
+</section>
+
+<!-- REGISTRO -->
+<section class="view" id="registro">
+  <div class="kicker">Diário</div>
+  <h2>Registro de treinos</h2>
+  <p class="lead">Anote logo após cada treino. Esforço de 1 (muito fácil) a 10 (máximo). Em “Obs.” registre dores, clima, sono ruim, etc. Tudo fica salvo neste navegador.</p>
+  <div style="height:22px"></div>
+  <div class="prog">
+    <div class="stat"><span class="big" id="done-n">0</span><span class="u">/ 30 sessões</span></div>
+    <div class="meter"><i id="meter"></i></div>
+    <button class="sm" id="clear-log">Limpar registro</button>
+  </div>
+  <div class="tw"><table class="log">
+    <thead><tr><th>Sem.</th><th>Dia</th><th>Feito?</th><th>Tempo total</th><th>Distância (km)</th><th>Ritmo médio</th><th>FC média</th><th>Esforço</th><th>Obs.</th></tr></thead>
+    <tbody id="logbody"></tbody>
+  </table></div>
+</section>
+
+<!-- EVOLUÇÃO -->
+<section class="view" id="evolucao">
+  <div class="kicker">Marcos</div>
+  <h2>Acompanhamento de evolução</h2>
+  <div class="tw"><table class="log">
+    <thead><tr><th>Momento</th><th>Data</th><th>Peso (kg)</th><th>Tempo 5 km</th><th>FC repouso (ao acordar)</th><th>Como me sinto</th></tr></thead>
+    <tbody id="evobody"></tbody>
+  </table></div>
+  <div class="cols" style="margin-top:34px">
+    <div class="c6"><div class="card">
+      <div class="kicker">Atalho</div>
+      <h3 style="margin:6px 0 12px">Conversor tempo ↔ ritmo</h3>
+      <div class="calc">
+        <div><label class="f" for="t5">Tempo nos 5 km (mm:ss)</label><input id="t5" type="text" placeholder="30:00"></div>
+        <div class="mono" style="padding-bottom:9px">= <b id="p5">—</b> /km</div>
+      </div>
+    </div></div>
+    <div class="c6"><div class="note" style="margin-top:0"><p>Alvo do teste final: <b>29:00 a 30:00</b>, saindo em ~6:00/km no 1º km e acelerando se sobrar. Ponto de partida registrado: 112 kg e ~31:00.</p></div></div>
+  </div>
+</section>
+
+<!-- CUIDADOS -->
+<section class="view" id="cuidados">
+  <div class="kicker">Segurança e rotina</div>
+  <h2>Sinais para parar ou ajustar</h2>
+  <div class="note warn"><p><b>Pare imediatamente e procure atendimento</b> se sentir dor ou aperto no peito, falta de ar desproporcional, tontura ou palpitação.</p></div>
+  <div class="cols">
+    <div class="c6">
+      <ul class="sig">
+        <li><span><b>Dor que piora durante a corrida</b>, que faz você mancar ou que continua no dia seguinte: pare, descanse 2–3 dias e, se persistir, consulte um médico ou fisioterapeuta.</span></li>
+        <li><span><b>Desconforto muscular leve</b> que melhora ao aquecer é normal no início.</span></li>
+        <li><span><b>Z2 muito difícil</b> ou FC de repouso subindo mais de 5–7 bpm por vários dias: troque a sessão de segunda por uma Z2 leve naquela semana.</span></li>
+        <li><span><b>Recomendação:</b> com IMC acima de 30, vale fazer uma avaliação médica (e se possível um teste ergométrico) antes de entrar nos tiros fortes.</span></li>
+      </ul>
+    </div>
+    <div class="c6">
+      <div class="kicker" style="margin-bottom:6px">Dicas que fazem diferença</div>
+      <ul class="sig ok">
+        <li><span><b>Tênis</b> com bom amortecimento, trocado a cada 600–800 km.</span></li>
+        <li><span><b>Passada curta e frequente:</b> pise embaixo do corpo, não lá na frente. Cadência entre 165–175 passos por minuto reduz impacto.</span></li>
+        <li><span><b>Sono</b> de 7–8 h e boa hidratação valem mais que qualquer treino extra.</span></li>
+        <li><span>Treine no começo da manhã ou à noite para fugir do calor de fim de ano; no calor, aceite ritmos 15–30 s/km mais lentos para a mesma zona.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- CICLO 2 -->
+<section class="view" id="ciclo2">
+  <div class="kicker">Depois do teste</div>
+  <h2>Ciclo 2</h2>
+  <p class="lead">Quando terminar a semana 10, volte com estes dados para recalcular as zonas e montar o próximo ciclo — mais volume, tiros mais longos e um objetivo novo: sub-28 nos 5 km ou início da preparação para 10 km.</p>
+  <div style="height:28px"></div>
+  <div class="cols">
+    <div class="c4"><div class="card"><div class="kicker">01</div><h3>Novo tempo de 5 km</h3></div></div>
+    <div class="c4"><div class="card"><div class="kicker">02</div><h3>Peso atual</h3></div></div>
+    <div class="c4"><div class="card"><div class="kicker">03</div><h3>Sua idade</h3></div></div>
+    <div class="c4"><div class="card"><div class="kicker">04</div><h3>Dados de FC (se tiver relógio)</h3></div></div>
+    <div class="c4"><div class="card"><div class="kicker">05</div><h3>Quais treinos foram fáceis ou difíceis</h3></div></div>
+    <div class="c4"><div class="card"><div class="kicker">06</div><h3>Se teve alguma dor</h3></div></div>
+  </div>
+</section>
+
+</main>
+
+<footer><div class="wrap">Plano de Corrida · Ciclo 1 · 10 semanas · início 19/10/2026 · teste final 26/12/2026</div></footer>
+
+<script src="script.js"></script>
+</body>
+</html>
