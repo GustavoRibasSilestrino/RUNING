@@ -320,3 +320,5 @@ header.top nav.tabs{flex:none;justify-content:center;overflow:visible}
 .mini-tw table{min-width:0;font-size:13px}
 .mini-tw td,.mini-tw th{padding:8px 10px}
 @media (max-width:900px){.ev-grid{grid-template-columns:1fr}.ev-stats{grid-template-columns:1fr 1fr}.ev-stats div:nth-child(2){border-right:0}.ev-stats div:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+
+.plot .val{stroke:var(--card);stroke-width:4;stroke-linejoin:round;paint-order:stroke}
