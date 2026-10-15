@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ciclo 1 — 10 semanas até o 5 km</title>
-<meta name="theme-color" content="#f2efe8">
+<meta name="theme-color" content="#0e0e0d">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,6 +17,7 @@
     <a class="brand" href="#inicio">Ciclo<b>1</b> <span>/ 10 semanas</span></a>
     <nav class="tabs" role="tablist" aria-label="Seções">
       <button role="tab" data-tab="inicio">Início</button>
+      <button role="tab" data-tab="treino">Treino</button>
       <button role="tab" data-tab="zonas">Zonas</button>
       <button role="tab" data-tab="rotina">Rotina</button>
       <button role="tab" data-tab="plano">Plano</button>
@@ -25,7 +26,6 @@
       <button role="tab" data-tab="cuidados">Cuidados</button>
       <button role="tab" data-tab="ciclo2">Ciclo 2</button>
     </nav>
-    <button class="themebtn" id="theme" aria-label="Alternar tema claro/escuro">◐</button>
   </div>
 </header>
 
@@ -33,7 +33,7 @@
 
 <!-- INÍCIO -->
 <section class="view" id="inicio">
-  <div class="hero">
+  <div class="cover"><div class="hero">
     <div>
       <div class="kicker">19/10/2026 → 26/12/2026 · seg · qua · sáb</div>
       <h1>10 semanas.<br><em>5 km</em> em<br>29–30 min.</h1>
@@ -46,11 +46,9 @@
       <div><div class="n">2</div><div class="l">semanas de recuperação</div></div>
       <div><div class="n">80%</div><div class="l">do volume em Z1–Z2</div></div>
     </div>
-  </div>
+  </div></div>
 
-  <div class="rule"></div>
-
-  <div class="kicker">Ponto de partida</div>
+  <div class="kicker" style="margin-top:56px">Ponto de partida</div>
   <h2>Onde você está hoje</h2>
   <div class="cols">
     <div class="c7">
@@ -75,6 +73,78 @@
     </div>
   </div>
   <p style="margin-top:22px;max-width:70ch;color:var(--ink-2)">Iniciantes costumam melhorar de 4% a 7% no 5 km em 8 a 12 semanas de treino regular. Se você também perder peso no período, o ganho tende a ser maior: cada quilo a menos costuma valer alguns segundos por km.</p>
+</section>
+
+<!-- TREINO AO VIVO -->
+<section class="view" id="treino">
+  <div class="kicker">Ao vivo · GPS</div>
+  <h2>Treino</h2>
+  <div class="run">
+    <div class="run-main">
+      <div class="run-time" id="r-time">00:00</div>
+      <div class="run-grid">
+        <div><small>Distância</small><b id="r-dist">0,00</b><i>km</i></div>
+        <div><small>Ritmo atual</small><b id="r-pace">--:--</b><i>/km</i></div>
+        <div><small>Ritmo médio</small><b id="r-avg">--:--</b><i>/km</i></div>
+        <div><small>Último trecho</small><b id="r-last">--:--</b><i>/km</i></div>
+      </div>
+      <div class="run-status" id="r-status" role="status" aria-live="polite">Pronto para começar</div>
+      <div class="run-btns">
+        <button class="cta big" id="r-start">Iniciar</button>
+        <button class="cta ghost big" id="r-pause" hidden>Pausar</button>
+        <button class="cta ghost big" id="r-finish" hidden>Finalizar</button>
+      </div>
+      <div class="note warn" id="r-summary" hidden>
+        <b id="r-sum-txt"></b>
+        <div class="calc" style="margin-top:12px">
+          <div><label class="f" for="r-slot">Salvar no registro em</label><select id="r-slot"></select></div>
+          <button class="sm" id="r-save">Salvar no registro</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="run-set card">
+      <div class="kicker">Alertas</div>
+      <div class="fld"><label class="f" for="r-target">Ritmo alvo</label>
+        <select id="r-target">
+          <option value="none">Sem alvo</option>
+          <option value="z1">Z1 · acima de 8:15</option>
+          <option value="z2" selected>Z2 · 7:30 – 8:15</option>
+          <option value="z3">Z3 · 6:50 – 7:20</option>
+          <option value="z4">Z4 · 6:15 – 6:40</option>
+          <option value="z5">Z5 · 5:45 – 6:05</option>
+          <option value="rp">RP · 5:50 – 6:00</option>
+          <option value="custom">Personalizado</option>
+        </select></div>
+      <div class="fld two" id="r-custom" hidden>
+        <div><label class="f" for="r-min">Mais rápido (mm:ss)</label><input id="r-min" type="text" value="6:00"></div>
+        <div><label class="f" for="r-max">Mais lento (mm:ss)</label><input id="r-max" type="text" value="6:30"></div>
+      </div>
+      <div class="fld"><label class="f" for="r-int">Aviso a cada</label>
+        <select id="r-int"><option value="0.5">500 m</option><option value="1" selected>1 km</option><option value="2">2 km</option></select></div>
+      <div class="fld"><label class="f" for="r-goal">Meta de distância (km, opcional)</label>
+        <input id="r-goal" type="number" min="0" step="0.1" placeholder="5"></div>
+      <label class="chk-l"><input type="checkbox" id="r-voice" checked> Aviso por voz</label>
+      <label class="chk-l"><input type="checkbox" id="r-vib" checked> Vibração</label>
+      <label class="chk-l"><input type="checkbox" id="r-pacealert" checked> Alertar ritmo fora do alvo</label>
+      <label class="chk-l"><input type="checkbox" id="r-sim"> Simular corrida (teste, sem GPS)</label>
+      <p class="mini" style="margin-top:12px">Mantenha a tela ligada durante o treino. A vibração funciona em Android; no iPhone só a voz.</p>
+    </aside>
+  </div>
+
+  <div class="rule"></div>
+  <h3>Parciais</h3>
+  <div class="tw" style="margin-top:12px"><table>
+    <thead><tr><th>Trecho</th><th>Tempo</th><th>Ritmo</th><th>Total</th></tr></thead>
+    <tbody id="r-splits"><tr><td colspan="4" class="mini">As parciais aparecem aqui durante o treino.</td></tr></tbody>
+  </table></div>
+
+  <h3 style="margin-top:36px">Últimos treinos</h3>
+  <div class="tw" style="margin-top:12px"><table>
+    <thead><tr><th>Data</th><th>Distância</th><th>Tempo</th><th>Ritmo médio</th></tr></thead>
+    <tbody id="r-hist"><tr><td colspan="4" class="mini">Nenhum treino gravado ainda.</td></tr></tbody>
+  </table></div>
+  <div class="note"><p><b>Para o GPS funcionar</b> o site precisa estar em endereço seguro (https, como o GitHub Pages) e você deve permitir a localização. Em segundo plano o navegador pode pausar a voz, então deixe a tela acesa.</p></div>
 </section>
 
 <!-- ZONAS -->
@@ -181,6 +251,9 @@
   <div class="prog">
     <div class="stat"><span class="big" id="done-n">0</span><span class="u">/ 30 sessões</span></div>
     <div class="meter"><i id="meter"></i></div>
+    <button class="sm" id="export-data">Exportar backup</button>
+    <button class="sm" id="import-data">Importar backup</button>
+    <input type="file" id="import-file" accept=".json,application/json" hidden>
     <button class="sm" id="clear-log">Limpar registro</button>
   </div>
   <div class="tw"><table class="log">
