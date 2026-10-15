@@ -255,3 +255,31 @@ header.top nav.tabs{flex:none;justify-content:center;overflow:visible}
   header.top .bar{display:flex;padding:0 16px;gap:12px}
   header.top nav.tabs{flex:1;justify-content:flex-start;overflow-x:auto}
 }
+
+/* registro em cartões (celular) */
+#logcards{display:none}
+@media (max-width:700px){
+  .log-table{display:none}
+  #logcards{display:block}
+}
+.wk-card{border:1.5px solid var(--ink);background:var(--card);margin-bottom:12px}
+.wk-card summary{display:flex;align-items:baseline;gap:12px;padding:14px 16px;cursor:pointer;list-style:none}
+.wk-card summary::-webkit-details-marker{display:none}
+.wk-card summary::after{content:"+";margin-left:8px;font:500 20px var(--mono);line-height:1}
+.wk-card[open] summary::after{content:"–"}
+.wk-card[open] summary{border-bottom:1.5px solid var(--ink)}
+.wk-n{font:800 20px var(--body);text-transform:uppercase}
+.wk-d{font:500 12px var(--mono);color:var(--ink-2);flex:1}
+.wk-c{font:600 12px var(--mono);padding:3px 8px;border:1.5px solid var(--line)}
+.wk-c.full{background:var(--z2);border-color:var(--z2);color:#fff}
+.lc{padding:16px;border-bottom:1px solid var(--line)}
+.lc:last-child{border-bottom:0}
+.lc.done{background:color-mix(in srgb,var(--z2) 14%,transparent);box-shadow:inset 4px 0 0 var(--z2)}
+.lc-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.lc-h b{font:700 18px var(--body)}
+.lc-done{display:flex;gap:8px;align-items:center;font:600 14px var(--body);cursor:pointer}
+.lc-done .chk{width:28px;height:28px;accent-color:var(--track)}
+.lc-g{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lc-g label{display:block;font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.lc-g label.full{grid-column:1/-1}
+.lc-g input{margin-top:4px;padding:12px 10px;font-size:16px}

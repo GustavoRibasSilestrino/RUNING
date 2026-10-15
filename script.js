@@ -97,11 +97,41 @@
       <td><input type="text" data-f="obs" style="min-width:160px"></td></tr>`;
   });
   lb.innerHTML=lh;
+
+  /* registro em cartões (celular): só a semana atual fica aberta */
+  const DAYFULL={'Seg':'Segunda','Qua':'Quarta','Sáb':'Sábado'};
+  const curWeek=(()=>{
+    const start=new Date(2026,9,19),now=new Date();now.setHours(0,0,0,0);
+    const w=Math.floor((now-start)/(7*864e5))+1;
+    return Math.min(10,Math.max(1,w));
+  })();
+  const cards=document.createElement('div');cards.id='logcards';cards.className='cards';
+  let ch='';
+  for(let w=1;w<=10;w++){
+    ch+=`<details class="wk-card" data-w="${w}"${w===curWeek?' open':''}><summary><span class="wk-n">Semana ${w}</span><span class="wk-d">${W[w-1][0]}</span><span class="wk-c" data-wc="${w}">0/3</span></summary>`;
+    DAYS.forEach(d=>{
+      const k=`${w}-${d}`;
+      ch+=`<div class="lc" data-k="${k}">
+        <div class="lc-h"><b>${DAYFULL[d]}</b><label class="lc-done"><input class="chk" type="checkbox" data-f="done" aria-label="Semana ${w} ${DAYFULL[d]} feito"> Feito</label></div>
+        <div class="lc-g">
+          <label>Tempo total<input type="text" data-f="time" placeholder="mm:ss" inputmode="numeric"></label>
+          <label>Distância (km)<input type="number" step="0.01" min="0" data-f="dist" inputmode="decimal"></label>
+          <label>Ritmo médio<input type="text" data-f="pace" placeholder="auto" readonly tabindex="-1"></label>
+          <label>FC média<input type="number" min="40" max="230" data-f="hr" inputmode="numeric"></label>
+          <label>Esforço (1–10)<input type="number" min="1" max="10" data-f="rpe" inputmode="numeric"></label>
+          <label class="full">Obs.<input type="text" data-f="obs"></label>
+        </div></div>`;
+    });
+    ch+='</details>';
+  }
+  cards.innerHTML=ch;
+  lb.closest('.tw').classList.add('log-table');
+  lb.closest('.tw').after(cards);
   const sec=t=>{const p=t.trim().split(':').map(Number);if(p.some(isNaN)||!t.trim())return null;return p.length===3?p[0]*3600+p[1]*60+p[2]:p.length===2?p[0]*60+p[1]:null};
   const fmt=s=>{s=Math.round(s);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
   function paint(){
     let n=0;
-    $$('#logbody tr').forEach(tr=>{
+    $$('#logbody tr, #logcards .lc').forEach(tr=>{
       const d=log[tr.dataset.k]||{};
       tr.querySelectorAll('[data-f]').forEach(inp=>{
         const f=inp.dataset.f;
@@ -109,15 +139,20 @@
         else if(f==='pace'){const t=sec(d.time||''),k=parseFloat(d.dist);inp.value=(t&&k>0)?fmt(t/k)+' /km':''}
         else if(document.activeElement!==inp)inp.value=d[f]||'';
       });
-      tr.classList.toggle('done',!!d.done); if(d.done)n++;
+      tr.classList.toggle('done',!!d.done); if(d.done&&tr.tagName==='TR')n++;
     });
+    for(let w=1;w<=10;w++){
+      const c=DAYS.filter(d=>(log[w+'-'+d]||{}).done).length,s=document.querySelector(`[data-wc="${w}"]`);
+      if(s){s.textContent=c+'/3';s.classList.toggle('full',c===3)}
+    }
     $('#done-n').textContent=n; $('#meter').style.width=(n/30*100)+'%';
   }
-  lb.addEventListener('input',e=>{
-    const tr=e.target.closest('tr'),f=e.target.dataset.f; if(!f||f==='pace')return;
+  const onLog=e=>{
+    const tr=e.target.closest('[data-k]'),f=e.target.dataset.f; if(!tr||!f||f==='pace')return;
     const k=tr.dataset.k; log[k]=log[k]||{}; log[k][f]=f==='done'?e.target.checked:e.target.value;
     store.set('log',log); paint();
-  });
+  };
+  lb.addEventListener('input',onLog);cards.addEventListener('input',onLog);
   $('#clear-log').addEventListener('click',()=>{
     if(confirm('Apagar todo o registro de treinos deste navegador?')){Object.keys(log).forEach(k=>delete log[k]);store.set('log',log);paint()}
   });
